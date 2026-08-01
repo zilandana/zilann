@@ -1,3 +1,14 @@
+<script>
+    // لێرە لە شوێنی "1234" پاسوۆردی خۆت بنووسە
+    let myPassword = "1998"; 
+    let userEntered = prompt("تکایە وشەی نهێنی بۆ کردنەوەی ئەپەکە بنووسە:");
+    
+    if (userEntered !== myPassword) {
+        document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px; font-family:sans-serif;'>دەستڕگەیشتن ڕەتکرایەوە! پاسوۆردەکە هەڵەیە.</h2>";
+        throw new Error("Unauthorized");
+    }
+</script>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>

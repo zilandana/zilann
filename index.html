@@ -3,65 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Zilan’s Basket - Cloud Sync</title>
+    <title>Zilan’s Basket</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Firebase App & Firestore Compat SDKs (Works locally without CORS issues) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
-    <script>
-        // زانیاری تایبەت بە پڕۆژەکەی خۆت
-        const firebaseConfig = {
-            apiKey: "AIzaSyCOp0xFGvYNElGk04CgI8glSbGBSQLdXPA",
-            authDomain: "zilan-basket.firebaseapp.com",
-            projectId: "zilan-basket",
-            storageBucket: "zilan-basket.firebasestorage.app",
-            messagingSenderId: "729355156041",
-            appId: "1:729355156041:web:8a3fa0cca10166f0eddd98"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
-        let currentMode = 'tiles';
-        let showDetailsPaneActive = false;
-        let searchQuery = '';
-        let items = [];
-
-        // گوێگرتنی ڕاستەوخۆ لە گۆڕانکارییەکانی کلۆود (Real-time Sync)
-        function initFirebaseSync() {
-            db.collection("zilans_items").onSnapshot((snapshot) => {
-                items = [];
-                snapshot.forEach((docSnap) => {
-                    items.push({ id: docSnap.id, ...docSnap.data() });
-                });
-                renderAll();
-            }, (error) => {
-                console.error("Error getting items: ", error);
-            });
-        }
-
-        async function firebaseAddOrUpdateItem(itemData, editId) {
-            if (editId) {
-                await db.collection("zilans_items").doc(editId).update(itemData);
-            } else {
-                await db.collection("zilans_items").add(itemData);
-            }
-        }
-
-        async function firebaseToggleBasket(id, currentInBasket) {
-            await db.collection("zilans_items").doc(id).update({ inBasket: !currentInBasket });
-        }
-
-        async function firebaseDeleteItem(id) {
-            await db.collection("zilans_items").doc(id).delete();
-        }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            initFirebaseSync();
-        });
-    </script>
 
     <style>
         :root {
@@ -189,9 +132,9 @@
             <button class="theme-toggle" onclick="toggleTheme()" id="themeToggleBtn">☀️</button>
         </div>
         <div class="nav-links">
-            <button class="nav-link active" onclick="switchView('dashboard')">🏠 Home</button>
-            <button class="nav-link" onclick="switchView('basket')">🛒 My Basket <span id="basketCountBadge" style="background:#27ae60; color:#fff; padding:2px 6px; border-radius:10px; font-size:0.75rem; margin-left:6px;">0</span></button>
-            <button class="nav-link" onclick="switchView('settings')">⚙️ Settings</button>
+            <button class="nav-link active" onclick="switchView('dashboard', event)">🏠 Home</button>
+            <button class="nav-link" onclick="switchView('basket', event)">🛒 My Basket <span id="basketCountBadge" style="background:#27ae60; color:#fff; padding:2px 6px; border-radius:10px; font-size:0.75rem; margin-left:6px;">0</span></button>
+            <button class="nav-link" onclick="switchView('settings', event)">⚙️ Settings</button>
         </div>
     </aside>
 
@@ -239,7 +182,7 @@
 
             <div class="workspace-layout" id="workspaceLayout">
                 <div>
-                    <div class="section-title">All Items (Synced Cloud)</div>
+                    <div class="section-title">All Items</div>
                     <div class="items-grid mode-tiles" id="dashboardItemsGrid"></div>
                 </div>
                 <div class="details-pane" id="detailsPane">
@@ -257,8 +200,8 @@
         </section>
 
         <section id="view-settings" class="view-section">
-            <div class="section-title">Settings & Cloud Status</div>
-            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 14px;">This app is now connected to Cloud Storage. Any device you open this file on will show the exact same synchronized data in real-time.</p>
+            <div class="section-title">Settings</div>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 14px;">Your items are saved securely on this device.</p>
             <button class="btn btn-outline" onclick="toggleTheme()">Toggle Dark/Light Mode</button>
         </section>
     </main>
@@ -310,11 +253,22 @@
     </div>
 
     <script>
-        function switchView(id) {
+        let currentMode = 'tiles';
+        let showDetailsPaneActive = false;
+        let searchQuery = '';
+        let items = JSON.parse(localStorage.getItem('zilans_basket_items')) || [
+            { id: '1', name: 'Chanel Chance Perfume', category: '🌸 Perfume', store: 'Duty Free', price: 145, status: 'To Buy', inBasket: true, image: '', notes: 'Sample item' }
+        ];
+
+        function saveData() {
+            localStorage.setItem('zilans_basket_items', JSON.stringify(items));
+        }
+
+        function switchView(id, event) {
             document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             document.getElementById(`view-${id}`).classList.add('active');
-            event.currentTarget.classList.add('active');
+            if(event && event.currentTarget) event.currentTarget.classList.add('active');
             if(window.innerWidth <= 900) document.getElementById('sidebar').classList.remove('open');
         }
 
@@ -338,7 +292,7 @@
             showDetailsPaneActive = !showDetailsPaneActive;
             document.getElementById('btnDetailsPane').classList.toggle('active', showDetailsPaneActive);
             document.getElementById('workspaceLayout').classList.toggle('with-details-pane', showDetailsPaneActive);
-            if(showDetailsPaneActive && typeof items !== 'undefined' && items.length > 0) {
+            if(showDetailsPaneActive && items.length > 0) {
                 selectItemForDetails(items[0]);
             }
         }
@@ -356,8 +310,13 @@
             `;
         }
 
-        function toggleBasketStatus(id, currentInBasket) {
-            firebaseToggleBasket(id, currentInBasket);
+        function toggleBasketStatus(id) {
+            const item = items.find(i => i.id === id);
+            if(item) {
+                item.inBasket = !item.inBasket;
+                saveData();
+                renderAll();
+            }
         }
 
         function handleSearch(query) {
@@ -366,7 +325,6 @@
         }
 
         function renderAll() {
-            if(typeof items === 'undefined') return;
             const selectedStatus = document.getElementById('statusFilter').value;
             let filteredItems = items;
 
@@ -431,7 +389,7 @@
                         <div class="item-details">Store: <strong>${item.store}</strong></div>
                         
                         <div class="card-action-btns" onclick="event.stopPropagation()">
-                            <button class="${basketBtnClass}" onclick="toggleBasketStatus('${item.id}', ${item.inBasket})">${basketBtnText}</button>
+                            <button class="${basketBtnClass}" onclick="toggleBasketStatus('${item.id}')">${basketBtnText}</button>
                             <button class="action-btn-edit" onclick="openEditModal('${item.id}')">✏️ Edit</button>
                             <button class="action-btn-delete" onclick="deleteItem('${item.id}')">🗑️ Delete</button>
                         </div>
@@ -474,7 +432,7 @@
 
         function closeModal() { document.getElementById('itemModal').classList.remove('open'); }
 
-        async function saveItem() {
+        function saveItem() {
             const name = document.getElementById('itemName').value.trim();
             if(!name) { alert('Please enter an item name.'); return; }
 
@@ -485,29 +443,41 @@
                 store: document.getElementById('itemStore').value.trim() || 'General',
                 price: parseFloat(document.getElementById('itemPrice').value) || 0,
                 status: document.getElementById('itemStatus').value,
-                inBasket: false,
                 image: document.getElementById('itemImage').value.trim(),
                 notes: document.getElementById('itemNotes').value.trim()
             };
 
-            try {
-                await firebaseAddOrUpdateItem(itemData, editId);
-                closeModal();
-            } catch (error) {
-                alert('Error: ' + error.message);
-                console.error(error);
+            if(editId) {
+                const item = items.find(i => i.id === editId);
+                if(item) {
+                    Object.assign(item, itemData);
+                }
+            } else {
+                const newItem = {
+                    id: Date.now().toString(),
+                    ...itemData,
+                    inBasket: false
+                };
+                items.push(newItem);
+            }
+
+            saveData();
+            closeModal();
+            renderAll();
+        }
+
+        function deleteItem(id) {
+            if(confirm('Are you sure you want to delete this item?')) {
+                items = items.filter(i => i.id !== id);
+                saveData();
+                renderAll();
             }
         }
 
-        async function deleteItem(id) {
-            if(confirm('Are you sure you want to delete this item?')) {
-                try {
-                    await firebaseDeleteItem(id);
-                } catch (error) {
-                    alert('Error: ' + error.message);
-                }
-            }
-        }
+        // Initial render on load
+        document.addEventListener("DOMContentLoaded", () => {
+            renderAll();
+        });
     </script>
 </body>
 </html>

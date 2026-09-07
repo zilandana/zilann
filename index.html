@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Zilan’s Basket</title>
     
-    <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Zilan Basket">
-
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -57,6 +52,27 @@
         header h1 {
             font-size: 22px;
             font-weight: 700;
+        }
+
+        .sync-buttons {
+            display: flex;
+            gap: 6px;
+        }
+
+        .sync-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-sub);
+            cursor: pointer;
+        }
+
+        .sync-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
         }
 
         /* Search & Filters */
@@ -229,6 +245,11 @@
     <div class="container">
         <header>
             <h1>Zilan’s Basket 🛒</h1>
+            <div class="sync-buttons">
+                <button class="sync-btn" onclick="exportData()" title="دابەزاندنی داتاکان">Export 📥</button>
+                <button class="sync-btn" onclick="document.getElementById('import-file').click()" title="هێنانی داتاکان">Import 📤</button>
+                <input type="file" id="import-file" style="display:none" accept=".json" onchange="importData(event)">
+            </div>
         </header>
 
         <div class="controls">
@@ -317,6 +338,37 @@
             renderItems();
         }
 
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(items));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "zilan_basket_backup.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importData(event) {
+            const fileReader = new FileReader();
+            if (event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0], "UTF-8");
+                fileReader.onload = function(e) {
+                    try {
+                        const parsed = JSON.parse(e.target.result);
+                        if (Array.isArray(parsed)) {
+                            items = parsed;
+                            saveAndRender();
+                            alert('داتاکان بە سەرکەوتوویی هێنرانە ناوەوە!');
+                        } else {
+                            alert('فایلی هەڵە هەڵبژێردراوە!');
+                        }
+                    } catch (err) {
+                        alert('هەڵە لە خوێندنەوەی فایلەکەدا!');
+                    }
+                };
+            }
+        }
+
         function renderItems() {
             const container = document.getElementById('items-container');
             const searchText = document.getElementById('search-input').value.toLowerCase();
@@ -356,7 +408,6 @@
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // Initial render on load
         renderItems();
     </script>
 </body>

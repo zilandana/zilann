@@ -132,9 +132,9 @@
             <button class="theme-toggle" onclick="toggleTheme()" id="themeToggleBtn">☀️</button>
         </div>
         <div class="nav-links">
-            <button class="nav-link active" onclick="switchView('dashboard', event)">🏠 Home</button>
-            <button class="nav-link" onclick="switchView('basket', event)">🛒 My Basket <span id="basketCountBadge" style="background:#27ae60; color:#fff; padding:2px 6px; border-radius:10px; font-size:0.75rem; margin-left:6px;">0</span></button>
-            <button class="nav-link" onclick="switchView('settings', event)">⚙️ Settings</button>
+            <button class="nav-link active" onclick="switchView('dashboard', event)" id="nav-dashboard">🏠 Home</button>
+            <button class="nav-link" onclick="switchView('basket', event)" id="nav-basket">🛒 My Basket <span id="basketCountBadge" style="background:#27ae60; color:#fff; padding:2px 6px; border-radius:10px; font-size:0.75rem; margin-left:6px;">0</span></button>
+            <button class="nav-link" onclick="switchView('settings', event)" id="nav-settings">⚙️ Settings</button>
         </div>
     </aside>
 
@@ -201,7 +201,7 @@
 
         <section id="view-settings" class="view-section">
             <div class="section-title">Settings</div>
-            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 14px;">Your items are saved securely on this device.</p>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 14px;">Your items and preferences are saved securely on this device.</p>
             <button class="btn btn-outline" onclick="toggleTheme()">Toggle Dark/Light Mode</button>
         </section>
     </main>
@@ -268,7 +268,13 @@
             document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             document.getElementById(`view-${id}`).classList.add('active');
-            if(event && event.currentTarget) event.currentTarget.classList.add('active');
+            
+            const activeBtn = event && event.currentTarget ? event.currentTarget : document.getElementById(`nav-${id}`);
+            if(activeBtn) activeBtn.classList.add('active');
+
+            // پاشەکەوتکردنی شوێنی ئێستا لە LocalStorage
+            localStorage.setItem('zilans_current_view', id);
+
             if(window.innerWidth <= 900) document.getElementById('sidebar').classList.remove('open');
         }
 
@@ -278,6 +284,7 @@
             const body = document.body;
             const t = body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
             body.setAttribute('data-theme', t);
+            localStorage.setItem('zilans_theme', t);
             document.getElementById('themeToggleBtn').textContent = t === 'light' ? '☀️' : '🌙';
         }
 
@@ -285,6 +292,7 @@
             currentMode = mode;
             document.getElementById('btnTiles').classList.toggle('active', mode === 'tiles');
             document.getElementById('btnContent').classList.toggle('active', mode === 'content');
+            localStorage.setItem('zilans_layout_mode', mode);
             renderAll();
         }
 
@@ -474,7 +482,21 @@
             }
         }
 
+        // گەڕاندنەوەی دۆخی پێشوو (Auto-restore) لە کاتی کرانەوەدا
         document.addEventListener("DOMContentLoaded", () => {
+            // گەڕاندنەوەی تێما (Theme)
+            const savedTheme = localStorage.getItem('zilans_theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            document.getElementById('themeToggleBtn').textContent = savedTheme === 'light' ? '☀️' : '🌙';
+
+            // گەڕاندنەوەی دوایین بەش (View) کە تێیدا بووە
+            const savedView = localStorage.getItem('zilans_current_view') || 'dashboard';
+            switchView(savedView);
+
+            // گەڕاندنەوەی شێوازی نمایشت (Tiles / Content)
+            const savedLayout = localStorage.getItem('zilans_layout_mode') || 'tiles';
+            setleyoutMode(savedLayout);
+
             renderAll();
         });
     </script>
